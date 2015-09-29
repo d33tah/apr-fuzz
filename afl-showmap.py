@@ -13,14 +13,14 @@ shmat.restype = ctypes.POINTER(ctypes.c_char * MAP_SIZE)
 shmctl = ctypes.cdll.LoadLibrary("libc.so.6").shmctl
 
 
-def atexit_handler(shm_id):
+def remove_shm(shm_id):
     shmctl(shm_id, IPC_RMID, 0)
 
 
 def main():
 
     shm_id = shmget(IPC_PRIVATE, MAP_SIZE, IPC_CREAT | IPC_EXCL | 0600)
-    atexit.register(atexit_handler, shm_id)
+    atexit.register(remove_shm, shm_id)
 
     print('-- Program output begins --')
     p = subprocess.Popen('./hello', shell=True,
