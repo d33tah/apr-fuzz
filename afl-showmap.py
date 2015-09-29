@@ -50,8 +50,8 @@ def main(target, outfile):
         sys.stderr.write("tuples in '%s'.\x1b[0m\n" % outfile)
     else:
         sys.stderr.write('\x0f\x1b)B\x1b[?25h')  # bSTOP RESET_G1 CURSOR_SHOW
-        sys.stderr.write("\n\x1b[1;31m[-] PROGRAM ABORT : \x1b")
-        sys.stderr.write("[1;37mNo instrumentation detected\x1b[1;31m\n")
+        sys.stderr.write("\n\x1b[1;31m[-] PROGRAM ABORT : ")
+        sys.stderr.write("\x1b[1;37mNo instrumentation detected\x1b[1;31m\n")
 
 if __name__ == '__main__':
     main(sys.argv[2:], sys.argv[1])
