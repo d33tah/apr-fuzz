@@ -49,8 +49,8 @@ def main(target, outfile):
         sys.stderr.write("\x1b[1;32m[+] \x1b[0mCaptured %d " % num_tuples)
         sys.stderr.write("tuples in '%s'.\x1b[0m\n" % outfile)
     else:
-        sys.stderr.write('\x0f\x1b)B\x1b[?25h')  # bSTOP RESET_G1 CURSOR_SHOW
-        sys.stderr.write("\n\x1b[1;31m[-] PROGRAM ABORT : ")
+        sys.stderr.write('\x0f\x1b)B\x1b[?25h\n')  # bSTOP RESET_G1 CURSOR_SHOW
+        sys.stderr.write("\x1b[1;31m[-] PROGRAM ABORT : ")
         sys.stderr.write("\x1b[1;37mNo instrumentation detected\x1b[1;31m\n")
 
 if __name__ == '__main__':
