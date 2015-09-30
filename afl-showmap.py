@@ -21,6 +21,7 @@ import argparse
 import sys
 from shm_instrumentation import SHMInstrumentation
 
+
 class AFLShowmap(SHMInstrumentation):
 
     def pre_proc_started(self):
