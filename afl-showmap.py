@@ -26,7 +26,7 @@ class AFLShowmap(SHMInstrumentation):
 
     def pre_proc_started(self):
         sys.stderr.write("\x1b[1;34m[*] \x1b[0m")
-        sys.stderr.write("Executing '%s'...\n" % target_cmd)
+        sys.stderr.write("Executing '%s'...\n" % self.target_cmd)
         sys.stderr.write("\x1b[0\n")
 
         sys.stderr.write('-- Program output begins --\n')
@@ -35,6 +35,7 @@ class AFLShowmap(SHMInstrumentation):
         sys.stderr.write('-- Program output ends --\n')
 
     def go(self, target, outfile):
+        self.target_cmd = ' '.join(target)
         trace_bytes = SHMInstrumentation.go(self, target, outfile, sys.stdin)
         num_tuples = 0
         with open(outfile, "w") as f:

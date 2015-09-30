@@ -36,8 +36,6 @@ class SHMInstrumentation(object):
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
         atexit.register(self.remove_shm)
 
-        target_cmd = ' '.join(target)
-
         self.pre_proc_started()
         try:
             infile_fileno = infile.fileno()
