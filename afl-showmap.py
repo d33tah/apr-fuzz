@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+"""
+afl-showmap.py - an alternative map display utility for American Fuzzy Lop
+--------------------------------------------------------------------------
+
+Written by Jacek Wielemborek <d33tah@gmail.com>
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+A very simple tool that runs the targeted binary and displays
+the contents of the trace bitmap in a human-readable form. Useful in
+scripts to eliminate redundant inputs and perform other checks.
+"""
+
 import argparse
 import ctypes
 import subprocess
@@ -51,13 +68,12 @@ def main(target, outfile):
         sys.stderr.write("\x1b[1;31m[-] PROGRAM ABORT : ")
         sys.stderr.write("\x1b[1;37mNo instrumentation detected\x1b[1;31m\n")
 
+
 def parse_cmdline(argv):
     formattter_class = argparse.RawDescriptionHelpFormatter
     epilog = 'This tool displays raw tuple data captured by AFL ' \
              'instrumentation.\nFor additional help, consult docs/README.'
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=formattter_class,
-                                     usage='%(prog)s [options] -- '
+    parser = argparse.ArgumentParser(usage='%(prog)s [options] -- '
                                      '/path/to/target_app [ ... ]',
                                      epilog=epilog)
 
