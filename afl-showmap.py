@@ -70,12 +70,15 @@ def main(target, outfile):
 
 
 def parse_cmdline(argv):
-    formattter_class = argparse.RawDescriptionHelpFormatter
     epilog = 'This tool displays raw tuple data captured by AFL ' \
              'instrumentation.\nFor additional help, consult docs/README.'
     parser = argparse.ArgumentParser(usage='%(prog)s [options] -- '
                                      '/path/to/target_app [ ... ]',
                                      epilog=epilog)
+
+    # I really wanted this newline.
+    old_parser_help = parser.format_help
+    parser.format_help = lambda: "\n" + old_parser_help()
 
     reqgroup = parser.add_argument_group('required arguments')
     reqgroup.add_argument('-o', required=True, metavar='file',
@@ -83,10 +86,6 @@ def parse_cmdline(argv):
 
     parser.add_argument('path_to_target_app', nargs='+',
                         help=argparse.SUPPRESS)
-
-    # I really wanted this newline.
-    old_parser_help = parser.format_help()
-    parser.format_help = lambda: "\n" + old_parser_help
 
     return parser.parse_args(argv[1:])
 
