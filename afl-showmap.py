@@ -82,7 +82,7 @@ class AFLShowmap(SHMInstrumentation):
         trace_bytes = SHMInstrumentation.go(self, target, outfile, sys.stdin)
         num_tuples = 0
         with open(outfile, "w") as f:
-            for i in range(MAP_SIZE):
+            for i in range(len(trace_bytes)):
                 if trace_bytes[i] == '\x00':
                     continue
                 f.write("%06u:%u\n" % (i, ord(trace_bytes[i])))
