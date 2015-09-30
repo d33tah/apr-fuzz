@@ -56,11 +56,12 @@ class AFLShowmap(SHMInstrumentation):
 
 
 def parse_cmdline(argv):
+    formatter = argparse.RawDescriptionHelpFormatter
     epilog = 'This tool displays raw tuple data captured by AFL ' \
              'instrumentation.\nFor additional help, consult docs/README.'
     parser = argparse.ArgumentParser(usage='%(prog)s [options] -- '
                                      '/path/to/target_app [ ... ]',
-                                     epilog=epilog)
+                                     epilog=epilog, formatter_class=formatter)
 
     # I really wanted this newline.
     old_parser_help = parser.format_help
