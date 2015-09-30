@@ -35,9 +35,6 @@ class SHMInstrumentation(object):
         atexit.register(self.remove_shm)
 
         target_cmd = ' '.join(target)
-        sys.stderr.write("\x1b[1;34m[*] \x1b[0m")
-        sys.stderr.write("Executing '%s'...\n" % target_cmd)
-        sys.stderr.write("\x1b[0\n")
 
         self.pre_proc_started()
         p = subprocess.Popen(target, stdin=infile,

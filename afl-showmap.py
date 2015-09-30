@@ -24,6 +24,10 @@ from shm_instrumentation import SHMInstrumentation
 class AFLShowmap(SHMInstrumentation):
 
     def pre_proc_started(self):
+        sys.stderr.write("\x1b[1;34m[*] \x1b[0m")
+        sys.stderr.write("Executing '%s'...\n" % target_cmd)
+        sys.stderr.write("\x1b[0\n")
+
         sys.stderr.write('-- Program output begins --\n')
 
     def post_proc_started(self):
