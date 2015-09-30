@@ -32,41 +32,71 @@ shmat.restype = ctypes.POINTER(ctypes.c_char * MAP_SIZE)
 shmctl = ctypes.cdll.LoadLibrary("libc.so.6").shmctl
 
 
-def remove_shm(shm_id):
-    shmctl(shm_id, IPC_RMID, 0)
+class SHMInstrumentation(object):
 
+    def __init__(self):
+        self.shm_id = None
 
-def main(target, outfile):
+    def remove_shm(self):
+        if self.shm_id:
+            shmctl(self.shm_id, IPC_RMID, 0)
+            self.shm_id = None
 
-    shm_id = shmget(IPC_PRIVATE, MAP_SIZE, IPC_CREAT | IPC_EXCL | 0600)
-    atexit.register(remove_shm, shm_id)
+    def pre_proc_started(self):
+        pass
 
-    target_cmd = ' '.join(target)
-    sys.stderr.write("\x1b[1;34m[*] \x1b[0mExecuting '%s'...\n" % target_cmd)
-    sys.stderr.write("\x1b[0\n")
+    def post_proc_started(self):
+        pass
 
-    sys.stderr.write('-- Program output begins --\n')
-    p = subprocess.Popen(target, env={'__AFL_SHM_ID': str(shm_id)})
-    p.wait()
-    sys.stderr.write('-- Program output ends --\n')
+    def go(self, target, outfile, infile):
 
-    trace_bytes = shmat(shm_id, 0, 0)[0]
+        shm_perms = IPC_CREAT | IPC_EXCL | 0600
+        self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
+        atexit.register(self.remove_shm)
 
-    num_tuples = 0
-    with open(outfile, "w") as f:
-        for i in range(MAP_SIZE):
-            if trace_bytes[i] == '\x00':
-                continue
-            f.write("%06u:%u\n" % (i, ord(trace_bytes[i])))
-            num_tuples += 1
+        target_cmd = ' '.join(target)
+        sys.stderr.write("\x1b[1;34m[*] \x1b[0m")
+        sys.stderr.write("Executing '%s'...\n" % target_cmd)
+        sys.stderr.write("\x1b[0\n")
 
-    if num_tuples:
-        sys.stderr.write("\x1b[1;32m[+] \x1b[0mCaptured %d " % num_tuples)
-        sys.stderr.write("tuples in '%s'.\x1b[0m\n" % outfile)
-    else:
-        sys.stderr.write('\x0f\x1b)B\x1b[?25h\n')  # bSTOP RESET_G1 CURSOR_SHOW
-        sys.stderr.write("\x1b[1;31m[-] PROGRAM ABORT : ")
-        sys.stderr.write("\x1b[1;37mNo instrumentation detected\x1b[1;31m\n")
+        self.pre_proc_started()
+        p = subprocess.Popen(target, stdin=infile,
+                             env={'__AFL_SHM_ID': str(self.shm_id)})
+        p.wait()
+        self.post_proc_started()
+
+        trace_bytes = shmat(self.shm_id, 0, 0)[0]
+        shmctl(self.shm_id, IPC_RMID, 0)
+        self.shm_id = None
+        return trace_bytes
+
+class AFLShowmap(SHMInstrumentation):
+
+    def pre_proc_started(self):
+        sys.stderr.write('-- Program output begins --\n')
+
+    def post_proc_started(self):
+        sys.stderr.write('-- Program output ends --\n')
+
+    def go(self, target, outfile):
+        trace_bytes = SHMInstrumentation.go(self, target, outfile, sys.stdin)
+        num_tuples = 0
+        with open(outfile, "w") as f:
+            for i in range(MAP_SIZE):
+                if trace_bytes[i] == '\x00':
+                    continue
+                f.write("%06u:%u\n" % (i, ord(trace_bytes[i])))
+                num_tuples += 1
+
+        if num_tuples:
+            sys.stderr.write("\x1b[1;32m[+] \x1b[0mCaptured %d " % num_tuples)
+            sys.stderr.write("tuples in '%s'.\x1b[0m\n" % outfile)
+        else:
+            # bSTOP RESET_G1 CURSOR_SHOW
+            sys.stderr.write('\x0f\x1b)B\x1b[?25h\n')
+            sys.stderr.write("\x1b[1;31m[-] PROGRAM ABORT : ")
+            sys.stderr.write("\x1b[1;37mNo instrumentation ")
+            sys.stderr.write("detected\x1b[1;31m\n")
 
 
 def parse_cmdline(argv):
@@ -96,4 +126,4 @@ if __name__ == '__main__':
     sys.stderr.write("\x1b[0m by <d33tah@gmail.com>\n")
 
     args = parse_cmdline(sys.argv)
-    main(args.path_to_target_app, args.o)
+    AFLShowmap().go(args.path_to_target_app, args.o)
