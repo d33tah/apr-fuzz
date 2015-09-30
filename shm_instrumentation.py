@@ -37,8 +37,15 @@ class SHMInstrumentation(object):
         target_cmd = ' '.join(target)
 
         self.pre_proc_started()
-        p = subprocess.Popen(target, stdin=infile,
+        try:
+            infile_fileno = infile.fileno()
+        except AttributeError:
+            infile_fileno = None
+        p_stdin = infile if infile_fileno is not None else subprocess.PIPE
+        p = subprocess.Popen(target, stdin=p_stdin,
                              env={'__AFL_SHM_ID': str(self.shm_id)})
+        if p_stdin == subprocess.PIPE:
+            p.stdin.write(infile.read())
         p.wait()
         self.post_proc_started()
 
