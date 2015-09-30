@@ -59,6 +59,7 @@ class SHMInstrumentation(object):
 if __name__ == '__main__':
     import tempfile
     import StringIO
+    import os
     test_c_code = """
         /*
          * A simple program that is not instrumented by American Fuzzy Lop,
@@ -84,12 +85,23 @@ if __name__ == '__main__':
             exit(0);
         }
     """
-    with tempfile.NamedTemporaryFile(suffix='.c', delete=False) as tmp_c_file:
-        tmp_c_file.write(test_c_code)
-        tmp_c_file.flush()
-        compiled = tmp_c_file.name + '.out'
-        subprocess.call(['gcc', tmp_c_file.name, '-o', compiled])
-        a1 = SHMInstrumentation().go([compiled], sys.stdout, sys.stdin)
-        a2 = SHMInstrumentation().go([compiled], sys.stdout,
-                                     StringIO.StringIO('a'))
-        sys.exit(a1 != a2)
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.c') as tmp_c_file:
+            tmp_c_file.write(test_c_code)
+            tmp_c_file.flush()
+            compiled = tmp_c_file.name + '.out'
+            print("Building the test case...")
+            subprocess.call(['gcc', tmp_c_file.name, '-o', compiled])
+            print("Testing if sys.stdin is supported...")
+            a1 = SHMInstrumentation().go([compiled], sys.stdout, sys.stdin)
+            print("Testing if StringIO is supported...")
+            a2 = SHMInstrumentation().go([compiled], sys.stdout,
+                                         StringIO.StringIO('a'))
+            if a1 == a2:
+                print("Testing successful.")
+                sys.exit()
+            else:
+                print("Test results don't match.")
+                sys.exit(1)
+    finally:
+            os.unlink(compiled)
