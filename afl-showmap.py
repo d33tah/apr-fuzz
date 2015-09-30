@@ -34,7 +34,7 @@ class AFLShowmap(SHMInstrumentation):
     def post_proc_started(self):
         sys.stderr.write('-- Program output ends --\n')
 
-    def go(self, target, outfile):
+    def run(self, target, outfile):
         self.target_cmd = ' '.join(target)
         trace_bytes = SHMInstrumentation.go(self, target, outfile, sys.stdin)
         num_tuples = 0
@@ -84,4 +84,4 @@ if __name__ == '__main__':
     sys.stderr.write("\x1b[0m by <d33tah@gmail.com>\n")
 
     args = parse_cmdline(sys.argv)
-    AFLShowmap().go(args.path_to_target_app, args.o)
+    AFLShowmap().run(args.path_to_target_app, args.o)
