@@ -95,6 +95,9 @@ if __name__ == '__main__':
             print("Testing if StringIO is supported...")
             a2 = SHMInstrumentation().go([compiled], sys.stdout,
                                          StringIO.StringIO('a'))
+            if a1.count('\x00') == MAP_SIZE or a2.count('\x00') == MAP_SIZE:
+                print("Instrumentation didn't work - SHM map is empty.")
+                sys.exit(1)
             if a1 == a2:
                 print("Testing successful.")
                 sys.exit()
