@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import ctypes
 import subprocess
 import atexit
@@ -52,6 +54,42 @@ class SHMInstrumentation(object):
         trace_bytes = shmat(self.shm_id, 0, 0)[0]
         shmctl(self.shm_id, IPC_RMID, 0)
         self.shm_id = None
-        return trace_bytes
+        return trace_bytes.raw
 
+if __name__ == '__main__':
+    import tempfile
+    import StringIO
+    test_c_code = """
+        /*
+         * A simple program that is not instrumented by American Fuzzy Lop,
+         * but behaves as if it was.
+         */
 
+        #include <stdlib.h>
+        #include <stdio.h>
+        #include <sys/types.h>
+        #include <sys/shm.h>
+
+        int main() {
+            char* shmid_c = getenv("__AFL_SHM_ID");
+            if (shmid_c == NULL) {
+                printf("__AFL_SHM_ID not set.\\n");
+                exit(2);
+            }
+            int shmid = atoi(shmid_c);
+            char* x = shmat(shmid, 0, 0);
+            if (x == (char *)-1)
+                exit(1);
+            x[0] = 1;
+            exit(0);
+        }
+    """
+    with tempfile.NamedTemporaryFile(suffix='.c', delete=False) as tmp_c_file:
+        tmp_c_file.write(test_c_code)
+        tmp_c_file.flush()
+        compiled = tmp_c_file.name + '.out'
+        subprocess.call(['gcc', tmp_c_file.name, '-o', compiled])
+        a1 = SHMInstrumentation().go([compiled], sys.stdout, sys.stdin)
+        a2 = SHMInstrumentation().go([compiled], sys.stdout,
+                                     StringIO.StringIO('a'))
+        sys.exit(a1 != a2)
