@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import ctypes
 import subprocess
 import atexit
@@ -19,9 +20,6 @@ def remove_shm(shm_id):
 
 
 def main(target, outfile):
-
-    sys.stderr.write("\x1b[0;36mafl-showmap \x1b[1;37m1.94b")
-    sys.stderr.write("\x1b[0m by <d33tah@gmail.com>\n")
 
     shm_id = shmget(IPC_PRIVATE, MAP_SIZE, IPC_CREAT | IPC_EXCL | 0600)
     atexit.register(remove_shm, shm_id)
@@ -53,5 +51,34 @@ def main(target, outfile):
         sys.stderr.write("\x1b[1;31m[-] PROGRAM ABORT : ")
         sys.stderr.write("\x1b[1;37mNo instrumentation detected\x1b[1;31m\n")
 
+def parse_cmdline(argv):
+    formattter_class = argparse.RawDescriptionHelpFormatter
+    epilog = 'This tool displays raw tuple data captured by AFL ' \
+             'instrumentation.\nFor additional help, consult docs/README.'
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=formattter_class,
+                                     usage='%(prog)s [options] -- '
+                                     '/path/to/target_app [ ... ]',
+                                     epilog=epilog)
+
+    reqgroup = parser.add_argument_group('required arguments')
+    reqgroup.add_argument('-o', required=True, metavar='file',
+                          help='file to write the trace data to')
+
+    parser.add_argument('path_to_target_app', nargs='+',
+                        help=argparse.SUPPRESS)
+
+    # I really wanted this newline.
+    old_parser_help = parser.format_help()
+    parser.format_help = lambda: "\n" + old_parser_help
+
+    return parser.parse_args(argv[1:])
+
+
 if __name__ == '__main__':
-    main(sys.argv[2:], sys.argv[1])
+
+    sys.stderr.write("\x1b[0;36mafl-showmap \x1b[1;37m1.94b")
+    sys.stderr.write("\x1b[0m by <d33tah@gmail.com>\n")
+
+    args = parse_cmdline(sys.argv)
+    main(args.path_to_target_app, args.o)
