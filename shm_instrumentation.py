@@ -4,6 +4,7 @@ import ctypes
 import subprocess
 import atexit
 import sys
+import threading
 
 IPC_PRIVATE, IPC_CREAT, IPC_EXCL, IPC_RMID = 0, 512, 1024, 0
 MAP_SIZE = 65536
@@ -30,7 +31,7 @@ class SHMInstrumentation(object):
     def post_proc_started(self):
         pass
 
-    def go(self, target, outfile, infile):
+    def go(self, target, outfile, infile, stderr=sys.stderr, timeout=None):
 
         shm_perms = IPC_CREAT | IPC_EXCL | 0600
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
@@ -42,11 +43,20 @@ class SHMInstrumentation(object):
         except AttributeError:
             infile_fileno = None
         p_stdin = infile if infile_fileno is not None else subprocess.PIPE
-        p = subprocess.Popen(target, stdin=p_stdin,
+
+        if timeout is not None:
+            p = None
+            timer = threading.Timer(timeout, lambda: p.kill())
+            timer.start()
+
+        p = subprocess.Popen(target, stdin=p_stdin, stderr=stderr,
                              env={'__AFL_SHM_ID': str(self.shm_id)})
         if p_stdin == subprocess.PIPE:
             p.stdin.write(infile.read())
+            p.stdin.close()
         p.wait()
+        if timeout is not None:
+            timer.cancel()
         self.post_proc_started()
 
         trace_bytes = shmat(self.shm_id, 0, 0)[0]
