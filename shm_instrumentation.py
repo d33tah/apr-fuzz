@@ -19,6 +19,8 @@ shmctl = libc.shmctl
 calloc = libc.calloc
 calloc.restype = ctypes.c_void_p
 
+do_nothing = lambda x: x
+
 
 class SHMInstrumentation(object):
 
@@ -41,20 +43,15 @@ class SHMInstrumentation(object):
             shmctl(self.shm_id, IPC_RMID, 0)
             self.shm_id = None
 
-    def pre_proc_started(self):
-        pass
-
-    def post_proc_started(self):
-        pass
-
-    def go(self, target, outfile, infile, stderr=sys.stderr, timeout=None):
+    def go(self, target, outfile, infile, stderr=sys.stderr, timeout=None,
+           pre_proc_started=do_nothing, post_proc_started=do_nothing):
 
         crashed = [False]
         hung = [False]
         ctypes.memmove(self.trace_bytes_addr, self.empty_trace_bytes_addr,
                        MAP_SIZE)
 
-        self.pre_proc_started()
+        pre_proc_started()
         try:
             infile_fileno = infile.fileno()
         except AttributeError:
@@ -86,7 +83,7 @@ class SHMInstrumentation(object):
         p[0].wait()
         if timeout is not None:
             timer.cancel()
-        self.post_proc_started()
+        post_proc_started()
 
         if p[0].returncode < 0 and p[0].returncode != -9:
             crashed[0] = p[0].returncode

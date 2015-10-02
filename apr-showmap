@@ -22,7 +22,8 @@ import sys
 from shm_instrumentation import SHMInstrumentation
 
 
-class AFLShowmap(SHMInstrumentation):
+
+class AFLShowmap(object):
 
     def pre_proc_started(self):
         sys.stderr.write("\x1b[1;34m[*] \x1b[0m")
@@ -36,8 +37,11 @@ class AFLShowmap(SHMInstrumentation):
 
     def run(self, target, outfile):
         self.target_cmd = ' '.join(target)
-        trace_bytes, crashed, hung = SHMInstrumentation.go(self, target,
-                                                           outfile, sys.stdin)
+        s = SHMInstrumentation()
+        ret = s.go(target, outfile, sys.stdin,
+                   pre_proc_started=self.pre_proc_started,
+                   post_proc_started=self.post_proc_started)
+        trace_bytes, crashed, hung = ret[0], ret[1], ret[2]
         num_tuples = 0
         with open(outfile, "w") as f:
             for i in range(len(trace_bytes)):
