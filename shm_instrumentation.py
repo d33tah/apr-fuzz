@@ -61,24 +61,31 @@ class SHMInstrumentation(object):
         p_stdin = infile if infile_fileno is not None else subprocess.PIPE
 
         if timeout is not None:
-            p = None
-            timer = threading.Timer(timeout, lambda: p.kill())
+            p = [None]
+            def kill_process(p):
+                if p[0]:
+                    p[0].kill()
+                else:
+                    raise RuntimeError("Race condition at p[0].kill")
+            timer = threading.Timer(timeout, lambda: kill_process(p))
+
+        p[0] = subprocess.Popen(target, stdin=p_stdin, stderr=stderr,
+                                env={'__AFL_SHM_ID': str(self.shm_id)})
+        if timeout is not None:
             timer.start()
 
-        p = subprocess.Popen(target, stdin=p_stdin, stderr=stderr,
-                             env={'__AFL_SHM_ID': str(self.shm_id)})
-        if p_stdin == subprocess.PIPE:
-            p.stdin.write(infile.read())
-            p.stdin.close()
-        p.wait()
+        try:
+            if p_stdin == subprocess.PIPE:
+                p[0].stdin.write(infile.read())
+                p[0].stdin.close()
+        except IOError:  # brobably broken pipe
+            raise
+        p[0].wait()
         if timeout is not None:
             timer.cancel()
         self.post_proc_started()
 
-        trace_bytes_addr = shmat(self.shm_id, 0, 0)
-        if trace_bytes_addr == 2**64 - 1:
-            raise RuntimeError("shmat() failed (%s)" % os.strerror(errno()))
-        trace_bytes = ctypes.string_at(ctypes.c_void_p(trace_bytes_addr),
+        trace_bytes = ctypes.string_at(ctypes.c_void_p(self.trace_bytes_addr),
                                        MAP_SIZE)
         return trace_bytes
 
