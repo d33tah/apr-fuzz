@@ -9,7 +9,6 @@ import os
 
 IPC_PRIVATE, IPC_CREAT, IPC_EXCL, IPC_RMID = 0, 512, 1024, 0
 MAP_SIZE = 65536
-MINUS_ONE = 2**64 - 1
 
 libc = ctypes.CDLL(None, use_errno=True)
 
@@ -29,11 +28,11 @@ class SHMInstrumentation(object):
     def __init__(self):
         shm_perms = IPC_CREAT | IPC_EXCL | 0600
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
-        if self.shm_id == MINUS_ONE:
+        if self.shm_id == -1:
             error_string = os.strerror(ctypes.get_errno())
             raise RuntimeError("shmget() failed (%s)" % error_string)
         self.trace_bytes_addr = shmat(self.shm_id, 0, 0)
-        if self.trace_bytes_addr == 2**64 - 1:
+        if self.trace_bytes_addr == ctypes.c_void_p(-1).value:
             error_string = os.strerror(ctypes.get_errno())
             raise RuntimeError("shmat() failed (%s)" % error_string)
         self.empty_trace_bytes_addr = calloc(MAP_SIZE, 1)
