@@ -20,7 +20,8 @@ shmctl = libc.shmctl
 calloc = libc.calloc
 calloc.restype = ctypes.c_void_p
 
-do_nothing = lambda *args, **kwargs: None
+def do_nothing(*args, **kwargs):
+    pass
 
 
 class SHMInstrumentation(object):

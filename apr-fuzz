@@ -13,9 +13,11 @@ import threading
 import time
 try:
     import humanize
-    humanize_time = lambda t: humanize.time.naturaldelta(t)
+    def humanize_time(t):
+        return humanize.time.naturaldelta(t)
 except ImportError:
-    humanize_time = lambda t: str(t)
+    def humanize_time(t):
+        return str(t)
 
 
 class AFLFuzz(object):

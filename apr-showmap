@@ -22,7 +22,6 @@ import sys
 from shm_instrumentation import SHMInstrumentation
 
 
-
 class AFLShowmap(object):
 
     def pre_proc_started(self):
