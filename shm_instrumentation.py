@@ -54,7 +54,8 @@ class SHMInstrumentation(object):
 
         crashed = [False]
         hung = [False]
-        ctypes.memmove(self.trace_bytes_addr, self.empty_trace_bytes_addr, MAP_SIZE)
+        ctypes.memmove(self.trace_bytes_addr, self.empty_trace_bytes_addr,
+                       MAP_SIZE)
 
         self.pre_proc_started()
         try:
@@ -65,6 +66,7 @@ class SHMInstrumentation(object):
 
         if timeout is not None:
             p = [None]
+
             def kill_process(p, hung):
                 if p[0]:
                     p[0].kill()
