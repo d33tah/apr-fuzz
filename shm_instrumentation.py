@@ -17,6 +17,8 @@ shmget = libc.shmget
 shmat = libc.shmat
 shmat.restype = ctypes.c_void_p
 shmctl = libc.shmctl
+calloc = libc.calloc
+calloc.restype = ctypes.c_void_p
 
 libc.__errno_location.restype = ctypes.POINTER(ctypes.c_int)
 errno = lambda: libc.__errno_location().contents.value
@@ -29,6 +31,11 @@ class SHMInstrumentation(object):
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
         if self.shm_id == MINUS_ONE:
             raise RuntimeError("shmget() failed (%s)" % os.strerror(errno()))
+        self.trace_bytes_addr = shmat(self.shm_id, 0, 0)
+        if self.trace_bytes_addr == 2**64 - 1:
+            raise RuntimeError("shmat() failed (%s)" % os.strerror(errno()))
+        self.empty_trace_bytes_addr = calloc(MAP_SIZE, 1)
+
         atexit.register(self.remove_shm)
 
     def remove_shm(self):
@@ -43,6 +50,8 @@ class SHMInstrumentation(object):
         pass
 
     def go(self, target, outfile, infile, stderr=sys.stderr, timeout=None):
+
+        ctypes.memmove(self.trace_bytes_addr, self.empty_trace_bytes_addr, MAP_SIZE)
 
         self.pre_proc_started()
         try:
