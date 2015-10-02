@@ -63,7 +63,8 @@ class SHMInstrumentation(object):
         trace_bytes_addr = shmat(self.shm_id, 0, 0)
         if trace_bytes_addr == 2**64 - 1:
             raise RuntimeError("shmat() failed")
-        trace_bytes = ctypes.string_at(ctypes.c_void_p(trace_bytes_addr), 1)
+        trace_bytes = ctypes.string_at(ctypes.c_void_p(trace_bytes_addr),
+                                       MAP_SIZE)
         return trace_bytes
 
 if __name__ == '__main__':
