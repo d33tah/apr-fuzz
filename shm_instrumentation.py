@@ -91,7 +91,7 @@ class SHMInstrumentation(object):
             timer.start()
 
         if p_stdin == subprocess.PIPE:
-            p[0].stdin.write(infile.read().encode())
+            p[0].stdin.write(infile.read())
             p[0].stdin.close()
 
         p[0].wait()
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     """
     try:
         with tempfile.NamedTemporaryFile(suffix='.c') as tmp_c_file:
-            tmp_c_file.write(test_c_code.encode())
+            tmp_c_file.write(test_c_code)
             tmp_c_file.flush()
             compiled = tmp_c_file.name + '.out'
             print("Building the test case...")
