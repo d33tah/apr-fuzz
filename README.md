@@ -14,8 +14,11 @@ that you're fuzzing GNU bison):
 
 ```
 $ ./afr-fuzz /path/to/instrumented/bison /dev/stdin
-New max score: 993
-New max score: 1006
+max=1038   execs/s=457.37     execs=458        crashes=0      hangs=2      elapsed=a second
+max=1042   execs/s=511.20     execs=1024       crashes=0      hangs=3      elapsed=2 seconds
+max=1042   execs/s=454.00     execs=1364       crashes=0      hangs=7      elapsed=3 seconds
+max=1042   execs/s=465.60     execs=1865       crashes=0      hangs=9      elapsed=4 seconds
+max=1060   execs/s=488.54     execs=2446       crashes=0      hangs=10     elapsed=5 seconds
 (list goes on...)
 ```
 
