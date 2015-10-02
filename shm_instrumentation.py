@@ -61,8 +61,8 @@ class SHMInstrumentation(object):
             infile_fileno = None
         p_stdin = infile if infile_fileno is not None else subprocess.PIPE
 
+        p = [None]
         if timeout is not None:
-            p = [None]
 
             def kill_process(p, hung):
                 if p[0]:
