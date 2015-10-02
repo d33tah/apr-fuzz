@@ -19,9 +19,6 @@ shmctl = libc.shmctl
 calloc = libc.calloc
 calloc.restype = ctypes.c_void_p
 
-libc.__errno_location.restype = ctypes.POINTER(ctypes.c_int)
-errno = lambda: libc.__errno_location().contents.value
-
 
 class SHMInstrumentation(object):
 
