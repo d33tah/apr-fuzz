@@ -49,6 +49,7 @@ class SHMInstrumentation(object):
 
     def remove_shm(self):
         global shmctl
+        print(shmctl)
         if self.shm_id:
             shmctl(self.shm_id, IPC_RMID, 0)
             self.shm_id = None
