@@ -1,4 +1,4 @@
 language: python
 python:
   - "2.7"
-script: python shm_instrumentation.py
+script: python shm_instrumentation.py ; make testcase ; echo 'a' | ./apr-showmap -o /dev/stdout ./testcase
