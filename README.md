@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/d33tah/apr-fuzz.svg?branch=master)](https://travis-ci.org/d33tah/apr-fuzz)
+
 apr-fuzz
 ========
 
