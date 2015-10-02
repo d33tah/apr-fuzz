@@ -1,6 +1,6 @@
 language: python
 install:
-  - pip install coveralls coverage
+  - pip install coveralls coverage pep8
 python:
   - "2.7"
 script:
@@ -10,3 +10,4 @@ script:
   - coverage run ./shm_instrumentation.py
   - echo 'a' | coverage run ./apr-showmap -o /dev/stdout ./testcase
   - coverage report
+  - pep8 apr-showmap apr-fuzz *.py
