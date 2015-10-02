@@ -25,17 +25,25 @@ do_nothing = lambda x: x
 class SHMInstrumentation(object):
 
     def __init__(self):
+
+        # set up SHM
         shm_perms = IPC_CREAT | IPC_EXCL | 0600
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
         if self.shm_id == -1:
             error_string = os.strerror(ctypes.get_errno())
             raise RuntimeError("shmget() failed (%s)" % error_string)
+
+        # actually get the buffer SHM points to
         self.trace_bytes_addr = shmat(self.shm_id, 0, 0)
         if self.trace_bytes_addr == ctypes.c_void_p(-1).value:
             error_string = os.strerror(ctypes.get_errno())
             raise RuntimeError("shmat() failed (%s)" % error_string)
+
+        # we might need to clean the buffer between executions - let's
+        # create a backup buffer so we can just use memmove()
         self.empty_trace_bytes_addr = calloc(MAP_SIZE, 1)
 
+        # whatever happens, remove the SHM before exiting the application
         atexit.register(self.remove_shm)
 
     def remove_shm(self):
@@ -48,10 +56,15 @@ class SHMInstrumentation(object):
 
         crashed = [False]
         hung = [False]
+
+        # clean the SHM buffer in case we reuse the SHMInstrumentation object
         ctypes.memmove(self.trace_bytes_addr, self.empty_trace_bytes_addr,
                        MAP_SIZE)
 
         pre_proc_started()
+
+        # support cStringIO - if we can't get the file number, we'll use pipes
+        # instead of forwarding the fd to the subprocess
         try:
             infile_fileno = infile.fileno()
         except AttributeError:
@@ -74,13 +87,12 @@ class SHMInstrumentation(object):
         if timeout is not None:
             timer.start()
 
-        try:
-            if p_stdin == subprocess.PIPE:
-                p[0].stdin.write(infile.read())
-                p[0].stdin.close()
-        except IOError:  # brobably broken pipe
-            raise
+        if p_stdin == subprocess.PIPE:
+            p[0].stdin.write(infile.read())
+            p[0].stdin.close()
+
         p[0].wait()
+
         if timeout is not None:
             timer.cancel()
         post_proc_started()
@@ -90,6 +102,7 @@ class SHMInstrumentation(object):
 
         trace_bytes = ctypes.string_at(ctypes.c_void_p(self.trace_bytes_addr),
                                        MAP_SIZE)
+
         return trace_bytes, crashed[0], hung[0]
 
 if __name__ == '__main__':
