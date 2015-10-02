@@ -25,20 +25,29 @@ class AFLFuzz(object):
         self.devnull = open(os.path.devnull)
         self.instr = SHMInstrumentation()
         self.procs_ran = 0
+        self.crashes = 0
+        self.hangs = 0
 
     def print_stats(self):
         while self.running:
             time.sleep(1)
             now = time.time()
             secs = now - self.started
-            print("max=%d\texecs/s=%.2f\texecs=%d\telapsed=%s" %
-                  (self.max_score, self.procs_ran / secs,
-                   self.procs_ran, humanize_time(secs)))
+            print(("max=%-06s execs/s=%-10s execs=%-10s "
+                   "crashes=%-06s hangs=%-6s elapsed=%s") %
+                  (self.max_score, "%0.2f" % (self.procs_ran / secs),
+                   self.procs_ran, self.crashes, self.hangs,
+                   humanize_time(secs)))
 
     def case_score(self, case):
         # print("Trying %s" % repr(case))
-        n = self.instr.go(self.target, self.devnull, StringIO(case),
-                          stderr=self.devnull, timeout=0.1)
+        n, crashed, hung = self.instr.go(self.target, self.devnull,
+                                         StringIO(case), stderr=self.devnull,
+                                         timeout=0.1)
+        if crashed:
+            print("Crashed [%d] with payload: %s" % (crashed, repr(case)))
+        self.crashes += 1 if crashed else 0
+        self.hangs += 1 if hung else 0
         self.procs_ran += 1
         return MAP_SIZE - n.count('\x00')
 

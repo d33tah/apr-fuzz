@@ -36,7 +36,8 @@ class AFLShowmap(SHMInstrumentation):
 
     def run(self, target, outfile):
         self.target_cmd = ' '.join(target)
-        trace_bytes = SHMInstrumentation.go(self, target, outfile, sys.stdin)
+        trace_bytes, crashed, hung = SHMInstrumentation.go(self, target,
+                                                           outfile, sys.stdin)
         num_tuples = 0
         with open(outfile, "w") as f:
             for i in range(len(trace_bytes)):

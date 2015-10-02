@@ -52,6 +52,8 @@ class SHMInstrumentation(object):
 
     def go(self, target, outfile, infile, stderr=sys.stderr, timeout=None):
 
+        crashed = [False]
+        hung = [False]
         ctypes.memmove(self.trace_bytes_addr, self.empty_trace_bytes_addr, MAP_SIZE)
 
         self.pre_proc_started()
@@ -63,12 +65,13 @@ class SHMInstrumentation(object):
 
         if timeout is not None:
             p = [None]
-            def kill_process(p):
+            def kill_process(p, hung):
                 if p[0]:
                     p[0].kill()
+                    hung[0] = True
                 else:
                     raise RuntimeError("Race condition at p[0].kill")
-            timer = threading.Timer(timeout, lambda: kill_process(p))
+            timer = threading.Timer(timeout, lambda: kill_process(p, hung))
 
         p[0] = subprocess.Popen(target, stdin=p_stdin, stderr=stderr,
                                 env={'__AFL_SHM_ID': str(self.shm_id)})
@@ -86,9 +89,12 @@ class SHMInstrumentation(object):
             timer.cancel()
         self.post_proc_started()
 
+        if p[0].returncode < 0 and p[0].returncode != -9:
+            crashed[0] = p[0].returncode
+
         trace_bytes = ctypes.string_at(ctypes.c_void_p(self.trace_bytes_addr),
                                        MAP_SIZE)
-        return trace_bytes
+        return trace_bytes, crashed[0], hung[0]
 
 if __name__ == '__main__':
     import tempfile
