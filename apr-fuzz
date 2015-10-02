@@ -9,6 +9,13 @@ import random
 import os
 import string
 from shm_instrumentation import SHMInstrumentation, MAP_SIZE
+import threading
+import time
+try:
+    import humanize
+    humanize_time = lambda t: humanize.time.naturaldelta(t)
+except ImportError:
+    humanize_time = lambda t: str(t)
 
 
 class AFLFuzz(object):
@@ -17,27 +24,40 @@ class AFLFuzz(object):
         self.target = target
         self.devnull = open(os.path.devnull)
         self.instr = SHMInstrumentation()
+        self.procs_ran = 0
+
+    def print_stats(self):
+        while self.running:
+            time.sleep(1)
+            now = time.time()
+            secs = now - self.started
+            print("max=%d\texecs/s=%.2f\texecs=%d\telapsed=%s" %
+                  (self.max_score, self.procs_ran / secs,
+                   self.procs_ran, humanize_time(secs)))
 
     def case_score(self, case):
         # print("Trying %s" % repr(case))
         n = self.instr.go(self.target, self.devnull, StringIO(case),
                           stderr=self.devnull, timeout=0.1)
+        self.procs_ran += 1
         return MAP_SIZE - n.count('\x00')
 
     def gen_random_case(self):
         return ''.join(chr(random.randint(0, 255)) for i in range(10))
 
     def run(self):
+        self.started = time.time()
+        self.max_score = 0
+        self.running = True
+        threading.Thread(target=self.print_stats).start()
         cases = {str(self.gen_random_case()): None for i in range(10)}
-        max_score = 0
         while True:
             for case in cases:
                 cases[case] = self.case_score(case)
             cases_sorted = sorted(cases.items(), key=lambda x: x[1])
 
-            if cases_sorted[-1][1] > max_score:
-                max_score = cases_sorted[-1][1]
-                print("New max score: %d" % max_score)
+            if cases_sorted[-1][1] > self.max_score:
+                self.max_score = cases_sorted[-1][1]
 
             # print("max=%d,%s" % (cases_sorted[-1][1],
             #                      repr(cases_sorted[-1][0])))
@@ -56,4 +76,9 @@ class AFLFuzz(object):
             cases = dict(cases_sorted)
 
 if __name__ == '__main__':
-    AFLFuzz(sys.argv[1:]).run()
+    try:
+        a = AFLFuzz(sys.argv[1:])
+        a.run()
+    except KeyboardInterrupt:
+        print("Aborting because of KeyboardInterrupt")
+        a.running = False
