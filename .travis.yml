@@ -4,6 +4,9 @@ install:
 python:
   - "2.7"
 script:
-  - coverage run shm_instrumentation.py
-  - make testcase ; echo 'a' | coverage run ./apr-showmap -o /dev/stdout ./testcase
+  - ./shm_instrumentation.py
+  - make testcase
+  - echo 'a' | ./apr-showmap -o /dev/stdout ./testcase
+  - coverage run ./shm_instrumentation.py
+  - echo 'a' | coverage run ./apr-showmap -o /dev/stdout ./testcase
   - coverage report
