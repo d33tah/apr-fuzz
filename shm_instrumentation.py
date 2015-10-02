@@ -5,15 +5,21 @@ import subprocess
 import atexit
 import sys
 import threading
+import os
 
 IPC_PRIVATE, IPC_CREAT, IPC_EXCL, IPC_RMID = 0, 512, 1024, 0
 MAP_SIZE = 65536
 MINUS_ONE = 2**64 - 1
 
-shmget = ctypes.cdll.LoadLibrary("libc.so.6").shmget
-shmat = ctypes.cdll.LoadLibrary("libc.so.6").shmat
+libc = ctypes.cdll.LoadLibrary("libc.so.6")
+
+shmget = libc.shmget
+shmat = libc.shmat
 shmat.restype = ctypes.c_void_p
-shmctl = ctypes.cdll.LoadLibrary("libc.so.6").shmctl
+shmctl = libc.shmctl
+
+libc.__errno_location.restype = ctypes.POINTER(ctypes.c_int)
+errno = lambda: libc.__errno_location().contents.value
 
 
 class SHMInstrumentation(object):
@@ -22,7 +28,7 @@ class SHMInstrumentation(object):
         shm_perms = IPC_CREAT | IPC_EXCL | 0600
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
         if self.shm_id == MINUS_ONE:
-            raise RuntimeError("shmget() failed")
+            raise RuntimeError("shmget() failed (%s)" % os.strerror(errno()))
         atexit.register(self.remove_shm)
 
     def remove_shm(self):
@@ -62,7 +68,7 @@ class SHMInstrumentation(object):
 
         trace_bytes_addr = shmat(self.shm_id, 0, 0)
         if trace_bytes_addr == 2**64 - 1:
-            raise RuntimeError("shmat() failed")
+            raise RuntimeError("shmat() failed (%s)" % os.strerror(errno()))
         trace_bytes = ctypes.string_at(ctypes.c_void_p(trace_bytes_addr),
                                        MAP_SIZE)
         return trace_bytes
