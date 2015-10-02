@@ -15,7 +15,7 @@ of your binaries. Once you do that, you can run them like this (assuming
 that you're fuzzing GNU bison):
 
 ```
-$ ./afr-fuzz /path/to/instrumented/bison /dev/stdin
+$ ./apr-fuzz /path/to/instrumented/bison /dev/stdin
 max=1038   execs/s=457.37     execs=458        crashes=0      hangs=2      elapsed=a second
 max=1042   execs/s=511.20     execs=1024       crashes=0      hangs=3      elapsed=2 seconds
 max=1042   execs/s=454.00     execs=1364       crashes=0      hangs=7      elapsed=3 seconds
