@@ -85,9 +85,13 @@ class AFLFuzz(object):
             cases = dict(cases_sorted)
 
 if __name__ == '__main__':
+    a = None
     try:
         a = AFLFuzz(sys.argv[1:])
         a.run()
     except KeyboardInterrupt:
         print("Aborting because of KeyboardInterrupt")
         a.running = False
+    finally:
+        if a:
+            a.running = False
