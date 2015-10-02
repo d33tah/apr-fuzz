@@ -6,6 +6,7 @@ import atexit
 import sys
 import threading
 import os
+import io
 
 IPC_PRIVATE, IPC_CREAT, IPC_EXCL, IPC_RMID = 0, 512, 1024, 0
 MAP_SIZE = 65536
@@ -27,7 +28,7 @@ class SHMInstrumentation(object):
     def __init__(self):
 
         # set up SHM
-        shm_perms = IPC_CREAT | IPC_EXCL | 0600
+        shm_perms = IPC_CREAT | IPC_EXCL | int('0600', 8)
         self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
         if self.shm_id == -1:
             error_string = os.strerror(ctypes.get_errno())
@@ -69,6 +70,8 @@ class SHMInstrumentation(object):
             infile_fileno = infile.fileno()
         except AttributeError:
             infile_fileno = None
+        except io.UnsupportedOperation:
+            infile_fileno = None
         p_stdin = infile if infile_fileno is not None else subprocess.PIPE
 
         p = [None]
@@ -88,7 +91,7 @@ class SHMInstrumentation(object):
             timer.start()
 
         if p_stdin == subprocess.PIPE:
-            p[0].stdin.write(infile.read())
+            p[0].stdin.write(infile.read().encode())
             p[0].stdin.close()
 
         p[0].wait()
@@ -107,7 +110,6 @@ class SHMInstrumentation(object):
 
 if __name__ == '__main__':
     import tempfile
-    import StringIO
     import os
     test_c_code = """
         /*
@@ -136,7 +138,7 @@ if __name__ == '__main__':
     """
     try:
         with tempfile.NamedTemporaryFile(suffix='.c') as tmp_c_file:
-            tmp_c_file.write(test_c_code)
+            tmp_c_file.write(test_c_code.encode())
             tmp_c_file.flush()
             compiled = tmp_c_file.name + '.out'
             print("Building the test case...")
@@ -145,7 +147,7 @@ if __name__ == '__main__':
             a1 = SHMInstrumentation().go([compiled], sys.stdout, sys.stdin)
             print("Testing if StringIO is supported...")
             a2 = SHMInstrumentation().go([compiled], sys.stdout,
-                                         StringIO.StringIO('a'))
+                                         io.StringIO(u'a'))
             if a1.count('\x00') == MAP_SIZE or a2.count('\x00') == MAP_SIZE:
                 print("Instrumentation didn't work - SHM map is empty.")
                 sys.exit(1)
