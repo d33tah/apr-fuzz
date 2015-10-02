@@ -45,11 +45,9 @@ class SHMInstrumentation(object):
         self.empty_trace_bytes_addr = calloc(MAP_SIZE, 1)
 
         # whatever happens, remove the SHM before exiting the application
-        atexit.register(self.remove_shm)
+        atexit.register(self.remove_shm, shmctl)
 
-    def remove_shm(self):
-        global shmctl
-        print(shmctl)
+    def remove_shm(self, shmctl):
         if self.shm_id:
             shmctl(self.shm_id, IPC_RMID, 0)
             self.shm_id = None
