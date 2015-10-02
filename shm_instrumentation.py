@@ -8,17 +8,22 @@ import threading
 
 IPC_PRIVATE, IPC_CREAT, IPC_EXCL, IPC_RMID = 0, 512, 1024, 0
 MAP_SIZE = 65536
+MINUS_ONE = 2**64 - 1
 
 shmget = ctypes.cdll.LoadLibrary("libc.so.6").shmget
 shmat = ctypes.cdll.LoadLibrary("libc.so.6").shmat
-shmat.restype = ctypes.POINTER(ctypes.c_char * MAP_SIZE)
+shmat.restype = ctypes.c_void_p
 shmctl = ctypes.cdll.LoadLibrary("libc.so.6").shmctl
 
 
 class SHMInstrumentation(object):
 
     def __init__(self):
-        self.shm_id = None
+        shm_perms = IPC_CREAT | IPC_EXCL | 0600
+        self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
+        if self.shm_id == MINUS_ONE:
+            raise RuntimeError("shmget() failed")
+        atexit.register(self.remove_shm)
 
     def remove_shm(self):
         if self.shm_id:
@@ -32,10 +37,6 @@ class SHMInstrumentation(object):
         pass
 
     def go(self, target, outfile, infile, stderr=sys.stderr, timeout=None):
-
-        shm_perms = IPC_CREAT | IPC_EXCL | 0600
-        self.shm_id = shmget(IPC_PRIVATE, MAP_SIZE, shm_perms)
-        atexit.register(self.remove_shm)
 
         self.pre_proc_started()
         try:
@@ -59,10 +60,11 @@ class SHMInstrumentation(object):
             timer.cancel()
         self.post_proc_started()
 
-        trace_bytes = shmat(self.shm_id, 0, 0)[0]
-        shmctl(self.shm_id, IPC_RMID, 0)
-        self.shm_id = None
-        return trace_bytes.raw
+        trace_bytes_addr = shmat(self.shm_id, 0, 0)
+        if trace_bytes_addr == 2**64 - 1:
+            raise RuntimeError("shmat() failed")
+        trace_bytes = ctypes.string_at(ctypes.c_void_p(trace_bytes_addr), 1)
+        return trace_bytes
 
 if __name__ == '__main__':
     import tempfile
