@@ -48,6 +48,7 @@ class SHMInstrumentation(object):
         atexit.register(self.remove_shm)
 
     def remove_shm(self):
+        global shmctl
         if self.shm_id:
             shmctl(self.shm_id, IPC_RMID, 0)
             self.shm_id = None
