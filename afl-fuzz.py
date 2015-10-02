@@ -16,11 +16,12 @@ class AFLFuzz(object):
     def __init__(self, target):
         self.target = target
         self.devnull = open(os.path.devnull)
+        self.instr = SHMInstrumentation()
 
     def case_score(self, case):
         # print("Trying %s" % repr(case))
-        n = SHMInstrumentation().go(self.target, self.devnull, StringIO(case),
-                                    stderr=self.devnull, timeout=0.1)
+        n = self.instr.go(self.target, self.devnull, StringIO(case),
+                          stderr=self.devnull, timeout=0.1)
         return MAP_SIZE - n.count('\x00')
 
     def gen_random_case(self):
