@@ -11,6 +11,14 @@ import io
 IPC_PRIVATE, IPC_CREAT, IPC_EXCL, IPC_RMID = 0, 512, 1024, 0
 MAP_SIZE = 65536
 
+count_class_lookup = map(chr,
+    [0, 1, 2, 4] +
+    [8] * 4 +
+    [16] * 8 +
+    [32] * 16 +
+    [64] * (64+32) +
+    [128] * 128)
+
 libc = ctypes.CDLL(None, use_errno=True)
 
 shmget = libc.shmget
@@ -107,6 +115,11 @@ class SHMInstrumentation(object):
 
         trace_bytes = ctypes.string_at(ctypes.c_void_p(self.trace_bytes_addr),
                                        MAP_SIZE)
+
+        # an equivalent of classify_counts() from afl-fuzz.
+        # no idea what it does really.
+        trace_bytes = ''.join(map(lambda c: count_class_lookup[ord(c)],
+                                  trace_bytes))
 
         return trace_bytes, crashed[0], hung[0]
 
